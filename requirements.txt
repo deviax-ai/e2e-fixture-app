@@ -1,1 +1,4 @@
-# stdlib only — intentionally empty
+# stdlib only — intentionally empty. Keeps the Kaniko build under 30s
+# AND keeps the fixture's issue profile honest: the problems Deviax
+# flags are structural (hardcoded config, root user, missing healthcheck,
+# SQLite local file) rather than "your dep X is outdated".
