@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -38,7 +39,7 @@ UPSTREAM_API_URL = "http://localhost:4000/api"
 SESSION_SECRET = "dev-secret-change-me-before-prod"  # noqa: S105
 
 # Port — hardcoded to 8080. Real deployments want this from PORT env.
-LISTEN_PORT = 8080
+LISTEN_PORT = int(os.environ.get("PORT", "8080"))
 
 # Local SQLite file. When Deviax runs issue_detection it should surface
 # "you're using SQLite, want a managed Postgres?" via user_qa's
@@ -104,6 +105,17 @@ class _Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     _ensure_db()
-    # No signal handler wired up — Deviax should flag the missing
-    # graceful-shutdown path as a LOW-severity issue.
-    HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler).serve_forever()
+    
+    server = HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler)
+    
+    # Graceful shutdown handler
+    def _shutdown_handler(signum: int, frame: object) -> None:
+        server.shutdown()
+    
+    signal.signal(signal.SIGTERM, _shutdown_handler)
+    signal.signal(signal.SIGINT, _shutdown_handler)
+    
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
