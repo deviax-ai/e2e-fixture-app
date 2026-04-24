@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import signal
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # --- HARDCODED CONFIG (on purpose — triggers IssueCard) -----------------
@@ -102,8 +104,16 @@ class _Handler(BaseHTTPRequestHandler):
         return  # quiet in the kaniko build log
 
 
+server = None
+
+def _shutdown_handler(signum: int, frame: object) -> None:
+    if server:
+        server.shutdown()
+    sys.exit(0)
+
+
 if __name__ == "__main__":
     _ensure_db()
-    # No signal handler wired up — Deviax should flag the missing
-    # graceful-shutdown path as a LOW-severity issue.
-    HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler).serve_forever()
+    signal.signal(signal.SIGTERM, _shutdown_handler)
+    server = HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler)
+    server.serve_forever()
