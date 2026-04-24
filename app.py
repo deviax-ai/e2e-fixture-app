@@ -22,6 +22,7 @@ import json
 import os
 import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import signal
 
 # --- HARDCODED CONFIG (on purpose — triggers IssueCard) -----------------
 #
@@ -104,6 +105,15 @@ class _Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     _ensure_db()
-    # No signal handler wired up — Deviax should flag the missing
-    # graceful-shutdown path as a LOW-severity issue.
-    HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler).serve_forever()
+    server = HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler)
+    
+    def _shutdown_handler(signum, frame):
+        server.shutdown()
+    
+    signal.signal(signal.SIGTERM, _shutdown_handler)
+    signal.signal(signal.SIGINT, _shutdown_handler)
+    
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
