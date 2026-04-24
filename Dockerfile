@@ -4,5 +4,12 @@
 FROM python:3.12-slim
 WORKDIR /app
 COPY app.py /app/app.py
+
+# Create non-root user
+RUN useradd -u 1001 -m app && \
+    chown -R app:app /app
+
+USER app
+
 EXPOSE 8080
 CMD ["python", "app.py"]
