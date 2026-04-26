@@ -38,7 +38,7 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 log = logging.getLogger("e2e-fixture")
-log.info("e2e-fixture starting up (rev 7)")
+log.info("e2e-fixture starting up (rev 8)")
 
 # --- HARDCODED CONFIG (on purpose — triggers IssueCard) -----------------
 #
