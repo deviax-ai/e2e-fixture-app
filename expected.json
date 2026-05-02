@@ -1,0 +1,61 @@
+{
+  "stack_bucket": "python-stdlib-sqlite",
+  "stack_slug": "python",
+  "external": {
+    "ai_source": "hand",
+    "complexity": "single-file"
+  },
+  "must_find_issues": [
+    { "source": "regex", "title_contains": "localhost" }
+  ],
+  "required_artifacts": [
+    "Dockerfile",
+    ".deviax/k8s/deployment.yaml",
+    ".deviax/k8s/service.yaml"
+  ],
+  "required_questions": [
+    "subdomain"
+  ],
+  "must_reach_phase": "live",
+  "assert": {
+    "outcome": "success",
+    "url_status_class": "2xx",
+    "url_status_after_1h": "not_5xx"
+  },
+  "budget": {
+    "max_ai_cost_usd": 1.50,
+    "max_duration_seconds": 900,
+    "max_user_questions": 5
+  },
+  "seeded_problems": [
+    {
+      "file": "app.py",
+      "line": 51,
+      "type": "hardcoded_localhost",
+      "marker_substring": "http://localhost:4000/api"
+    },
+    {
+      "file": "app.py",
+      "line": 55,
+      "type": "hardcoded_secret",
+      "marker_substring": "dev-secret-change-me-before-prod"
+    },
+    {
+      "file": "app.py",
+      "line": 63,
+      "type": "sqlite_in_production",
+      "marker_substring": "/tmp/counter.db"
+    },
+    {
+      "file": "Dockerfile",
+      "line": 1,
+      "type": "missing_user_directive"
+    },
+    {
+      "file": "Dockerfile",
+      "line": 1,
+      "type": "missing_healthcheck"
+    }
+  ],
+  "notes": "First Layer B fixture — Python stdlib HTTP server with SQLite, hardcoded localhost upstream, hardcoded session secret. Used as the canary for the entire fixture-eval system; if this fails on kind-nightly, the machinery is broken before any Phase 1 fixture drama. Seeded markers anchored to the Python source so drift_guard catches accidental fixes."
+}
