@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sqlite3
+import psycopg2
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlsplit
@@ -48,60 +48,68 @@ log.info("e2e-fixture starting up (rev 9)")
 # offer env-var injection via the IssueCard "Apply fix" flow.
 
 # Upstream API — in real deployments the customer wires in their own host.
-UPSTREAM_API_URL = "http://localhost:4000/api"
+UPSTREAM_API_URL = os.environ.get("UPSTREAM_API_URL", "http://localhost:4000/api")
 
 # Session secret — hardcoded (BAD). The fixture surfaces this so Deviax's
 # secret-detection heuristic can point it out.
 SESSION_SECRET = "dev-secret-change-me-before-prod"  # noqa: S105
 
 # Port — hardcoded to 8080. Real deployments want this from PORT env.
-LISTEN_PORT = 8080
+LISTEN_PORT = int(os.environ.get("PORT", "8080"))
 
 # Local SQLite file. When Deviax runs issue_detection it should surface
 # "you're using SQLite, want a managed Postgres?" via user_qa's
 # `database_mode` question.
-SQLITE_PATH = "/tmp/counter.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 
 def _ensure_db() -> None:
-    con = sqlite3.connect(SQLITE_PATH)
+    con = psycopg2.connect(DATABASE_URL)
     try:
-        con.execute(
+        cur = con.cursor()
+        cur.execute(
             "CREATE TABLE IF NOT EXISTS hits ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "ts INTEGER NOT NULL DEFAULT (strftime('%s','now')))"
+            "id SERIAL PRIMARY KEY, "
+            "ts INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()))"
         )
-        con.execute(
+        cur.execute(
             "CREATE TABLE IF NOT EXISTS notes ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "id SERIAL PRIMARY KEY, "
             "msg TEXT NOT NULL, "
-            "ts INTEGER NOT NULL DEFAULT (strftime('%s','now')))"
+            "ts INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()))"
         )
         con.commit()
-        log.info("db ready path=%s", SQLITE_PATH)
+        cur.close()
+        log.info("db ready url=%s", DATABASE_URL[:20] + "...")
     finally:
         con.close()
 
 
 def _record_hit() -> int:
-    con = sqlite3.connect(SQLITE_PATH)
+    con = psycopg2.connect(DATABASE_URL)
     try:
-        con.execute("INSERT INTO hits DEFAULT VALUES")
-        row = con.execute("SELECT COUNT(*) FROM hits").fetchone()
+        cur = con.cursor()
+        cur.execute("INSERT INTO hits (ts) VALUES (EXTRACT(EPOCH FROM NOW()))")
+        cur.execute("SELECT COUNT(*) FROM hits")
+        row = cur.fetchone()
         con.commit()
+        cur.close()
         return int(row[0]) if row else 0
     finally:
         con.close()
 
 
 def _add_note(msg: str) -> list[dict[str, object]]:
-    con = sqlite3.connect(SQLITE_PATH)
+    con = psycopg2.connect(DATABASE_URL)
     try:
-        con.execute("INSERT INTO notes (msg) VALUES (?)", (msg,))
+        cur = con.cursor()
+        cur.execute("INSERT INTO notes (msg, ts) VALUES (%s, EXTRACT(EPOCH FROM NOW()))", (msg,))
         con.commit()
-        rows = con.execute(
+        cur.execute(
             "SELECT id, msg, ts FROM notes ORDER BY id DESC LIMIT 20"
-        ).fetchall()
+        )
+        rows = cur.fetchall()
+        cur.close()
         return [{"id": r[0], "msg": r[1], "ts": r[2]} for r in rows]
     finally:
         con.close()
