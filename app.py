@@ -55,7 +55,7 @@ UPSTREAM_API_URL = "http://localhost:4000/api"
 SESSION_SECRET = "dev-secret-change-me-before-prod"  # noqa: S105
 
 # Port — hardcoded to 8080. Real deployments want this from PORT env.
-LISTEN_PORT = 8080
+LISTEN_PORT = int(os.environ.get("PORT", "8080"))
 
 # Local SQLite file. When Deviax runs issue_detection it should surface
 # "you're using SQLite, want a managed Postgres?" via user_qa's
