@@ -120,7 +120,7 @@ class _Handler(BaseHTTPRequestHandler):
         path = parts.path
         log.info("request method=GET path=%s remote=%s", self.path, self.client_address[0])
 
-        if path == "/healthz":
+        if path == "/" or path == "/healthz":
             self._respond(200, b"ok")
             return
         if path == "/env":
