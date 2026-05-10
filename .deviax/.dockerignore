@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+.env
+.env.local
+.env.*.local
+*.log
+.vscode
+.idea
+.DS_Store
+__pycache__
+*.pyc
+.pytest_cache
+.deviax
+*.db
+*.sqlite
+*.sqlite3
