@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  GREETING: "hello"
+  SQLITE_PATH: "/data/counter.db"
