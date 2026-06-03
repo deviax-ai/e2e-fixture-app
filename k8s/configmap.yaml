@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  UPSTREAM_API_URL: "https://qa-r13b-app-4zwp4.fixtoprod.ai"
+  SQLITE_PATH: "/tmp/counter.db"
