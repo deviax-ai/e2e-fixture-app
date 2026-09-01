@@ -48,14 +48,14 @@ log.info("e2e-fixture starting up (rev 9)")
 # offer env-var injection via the IssueCard "Apply fix" flow.
 
 # Upstream API — in real deployments the customer wires in their own host.
-UPSTREAM_API_URL = "http://localhost:4000/api"
+UPSTREAM_API_URL = os.environ.get("UPSTREAM_API_URL", "http://localhost:4000/api")
 
 # Session secret — hardcoded (BAD). The fixture surfaces this so Deviax's
 # secret-detection heuristic can point it out.
 SESSION_SECRET = "dev-secret-change-me-before-prod"  # noqa: S105
 
 # Port — hardcoded to 8080. Real deployments want this from PORT env.
-LISTEN_PORT = 8080
+LISTEN_PORT = int(os.environ.get("PORT", "8080"))
 
 # Local SQLite file. When Deviax runs issue_detection it should surface
 # "you're using SQLite, want a managed Postgres?" via user_qa's
