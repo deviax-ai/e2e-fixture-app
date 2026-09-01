@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import signal
 import sqlite3
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -167,6 +168,15 @@ class _Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     _ensure_db()
     log.info("listening port=%d", LISTEN_PORT)
-    # No signal handler wired up — Deviax should flag the missing
-    # graceful-shutdown path as a LOW-severity issue.
-    HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler).serve_forever()
+    
+    server = HTTPServer(("0.0.0.0", LISTEN_PORT), _Handler)
+    
+    def _shutdown_handler(signum: int, frame: object) -> None:
+        log.info("received signal=%d, shutting down gracefully", signum)
+        server.shutdown()
+    
+    signal.signal(signal.SIGTERM, _shutdown_handler)
+    signal.signal(signal.SIGINT, _shutdown_handler)
+    
+    log.info("signal handlers registered")
+    server.serve_forever()
